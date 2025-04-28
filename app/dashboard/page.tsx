@@ -20,17 +20,10 @@ import {
   EmptyState,
 } from "@/styles/DashboardStyles";
 import TransactionModal from "@/components/TransactionModal";
-import { Transaction } from "../domains/entities/ITransaction";
-import { User } from "../domains/entities/IUser";
+import { useUserContext } from "../contexts/UserContext";
 
 export default function Dashboard() {
-  const [user, setUser] = useState<User>({
-    id: "",
-    username: "",
-    email: "",
-    balance: 0,
-  });
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { user, transactions, updateUser } = useUserContext();
   const [modalType, setModalType] = useState<
     "deposit" | "transfer" | "refund" | null
   >(null);
@@ -44,51 +37,7 @@ export default function Dashboard() {
       router.push("/auth/signin");
       return;
     }
-
-    setUser(JSON.parse(userData));
-
-    fetchUserBalance();
-    fetchUserTransactions();
   }, [router]);
-
-  const fetchUserBalance = () => {
-    const token = localStorage.getItem("token");
-    fetch("http://localhost:3000/bank/balance", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    }).then((response) => {
-      response.json().then((data) => {
-        setUser((prev) => {
-          if (prev) {
-            return { ...prev, balance: data.balance };
-          }
-          return prev;
-        });
-      });
-    });
-  };
-
-  const fetchUserTransactions = () => {
-    const token = localStorage.getItem("token");
-    fetch("http://localhost:3000/transactions", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    }).then((response) => {
-      response.json().then((data) => {
-        const mappedTransactions = data.map((transaction: any) => ({
-          ...transaction,
-          date: new Date(transaction.createdAt).toISOString(),
-        }));
-        setTransactions(mappedTransactions);
-      });
-    });
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -123,9 +72,7 @@ export default function Dashboard() {
       <BalanceCard>
         <BalanceLabel>Your Balance</BalanceLabel>
         <BalanceAmount>
-          {user.balance !== null
-            ? `R$${Number(user.balance).toFixed(2)}`
-            : "Loading..."}
+          {user.balance ? `R$${Number(user.balance).toFixed(2)}` : "Loading..."}
         </BalanceAmount>
       </BalanceCard>
 
@@ -168,15 +115,7 @@ export default function Dashboard() {
         )}
       </TransactionList>
 
-      {modalType && (
-        <TransactionModal
-          type={modalType}
-          fetchUserTransactions={fetchUserTransactions}
-          fetchUserBalance={fetchUserBalance}
-          onClose={closeModal}
-          userId={user.id}
-        />
-      )}
+      {modalType && <TransactionModal type={modalType} onClose={closeModal} />}
     </DashboardContainer>
   );
 }

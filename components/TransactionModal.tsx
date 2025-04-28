@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
+import type React from "react";
+import { useState } from "react";
 import {
   ModalOverlay,
   ModalContainer,
@@ -14,90 +14,74 @@ import {
   FormInput,
   FormButton,
   ErrorMessage,
-} from "@/styles/ModalStyles"
+} from "@/styles/ModalStyles";
+import { useUserContext } from "@/app/contexts/UserContext";
+import {
+  handleDeposit,
+  handleRefund,
+  handleTransfer,
+} from "@/app/actions/userActions";
 
 type TransactionModalProps = {
-  type: "deposit" | "transfer" | "refund"
-  userId: string
-  onClose: () => void
-  fetchUserBalance: () => void
-  fetchUserTransactions: () => void
-}
+  type: "deposit" | "transfer" | "refund";
+  onClose: () => void;
+};
 
-export default function TransactionModal({ type, userId, onClose, fetchUserBalance, fetchUserTransactions }: TransactionModalProps) {
-  const [amount, setAmount] = useState("")
-  const [recipientId, setRecipientId] = useState("")
-  const [transactionId, setTransactionId] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+export default function TransactionModal({
+  type,
+  onClose,
+}: TransactionModalProps) {
+  const { updateUser, user } = useUserContext();
+  const [amount, setAmount] = useState("");
+  const [recipientId, setRecipientId] = useState("");
+  const [transactionId, setTransactionId] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("token");
     if (!token) {
-      setError("You must be logged in")
-      setLoading(false)
-      return
+      setError("You must be logged in");
+      setLoading(false);
+      return;
     }
 
     try {
-      let endpoint = ""
-      let body = {}
-
       switch (type) {
         case "deposit":
-          endpoint = "http://localhost:3000/transactions/deposit"
-          body = { toUserID: userId, amount }
-          break
+          await handleDeposit(token, user?.id!, amount);
+          break;
         case "transfer":
-          endpoint = "http://localhost:3000/transactions/transfer"
-          body = { toUserID: recipientId, amount }
-          break
+          await handleTransfer(token, recipientId, amount);
+          break;
         case "refund":
-          endpoint = "http://localhost:3000/transactions/refund"
-          body = { transactionID: transactionId }
-          break
+          await handleRefund(token, transactionId);
+          break;
       }
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || `Failed to ${type}`)
-      }
-
-      onClose()
-      fetchUserBalance()
-      fetchUserTransactions()
-      // window.location.reload()
+      onClose();
+      updateUser();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getTitle = () => {
     switch (type) {
       case "deposit":
-        return "Deposit Funds"
+        return "Deposit Funds";
       case "transfer":
-        return "Transfer Funds"
+        return "Transfer Funds";
       case "refund":
-        return "Refund Transaction"
+        return "Refund Transaction";
     }
-  }
+  };
 
   return (
     <ModalOverlay>
@@ -127,7 +111,7 @@ export default function TransactionModal({ type, userId, onClose, fetchUserBalan
 
           {type === "transfer" && (
             <FormGroup>
-              <FormLabel htmlFor="recipientId">Recipient ID</FormLabel>
+              <FormLabel htmlFor="recipientId">User ID</FormLabel>
               <FormInput
                 id="recipientId"
                 type="text"
@@ -157,5 +141,5 @@ export default function TransactionModal({ type, userId, onClose, fetchUserBalan
         </ModalForm>
       </ModalContainer>
     </ModalOverlay>
-  )
+  );
 }
