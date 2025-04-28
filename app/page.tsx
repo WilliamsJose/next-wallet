@@ -18,7 +18,7 @@ export default function Home() {
             <HomeButton>Sign In</HomeButton>
           </Link>
           <Link href="/auth/signup">
-            <HomeButton secondary>Create Account</HomeButton>
+            <HomeButton $secondary>Create Account</HomeButton>
           </Link>
         </div>
       </HomeContent>
