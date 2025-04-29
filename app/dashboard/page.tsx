@@ -32,6 +32,7 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
+    updateUser();
 
     if (!token || !userData) {
       router.push("/auth/signin");
